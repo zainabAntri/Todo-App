@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    // mongodb connection string
-    const MONGO_URI = "mongodb://todoUser:todoPassword@localhost:27017/todo-db";
+    // mongodb connection string mongodb://localhost:27017/
+    const MONGO_URI = "mongodb://localhost:27017/todos-db";
     await mongoose.connect(MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
