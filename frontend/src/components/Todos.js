@@ -1,172 +1,162 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import Confetti from "react-confetti";
+import React, { useState, useEffect } from "react";
 import Todo from "./Todo";
 import ListTodo from "./ListTodo";
 import EditTodo from "./EditTodo";
 
 const Todos = () => {
   const [todos, setTodos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  // Hide confetti after 3 seconds
-  useEffect(() => {
-    if (showConfetti) {
-      const timer = setTimeout(() => {
-        setShowConfetti(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showConfetti]);
-
-  const addTodo = async (title, description) => {
+  // Fetch todos from backend
+  const fetchTodos = async () => {
     try {
-      await axios.post("http://localhost:5001/api/todos", {
-        title,
-        description,
-      });
-      await fetchTodos();
-    } catch (err) {
-      setError("Failed to add todo");
+      const response = await fetch("http://localhost:5001/api/todos");
+      const data = await response.json();
+      setTodos(data.todos || []);
+    } catch (error) {
+      console.error("Error fetching todos:", error);
     }
   };
 
+  // Add new todo
+  const addTodo = async (title, description = "") => {
+    try {
+      const response = await fetch("http://localhost:5001/api/todos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, description }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setTodos((prev) => [...prev, data.todo]);
+      }
+    } catch (error) {
+      console.error("Error adding todo:", error);
+    }
+  };
+
+  // Update todo
   const updateTodo = async (id) => {
     try {
       const todo = todos.find((t) => t._id === id);
-      await axios.put(`http://localhost:5001/api/todos/${id}`, {
-        isCompleted: !todo.isCompleted,
+      const response = await fetch(`http://localhost:5001/api/todos/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isCompleted: !todo.isCompleted }),
       });
-      await fetchTodos();
-
-      // Trigger confetti animation only when marking task as completed
-      if (!todo.isCompleted) {
-        setShowConfetti(true);
+      const data = await response.json();
+      if (response.ok) {
+        setTodos((prev) => prev.map((t) => (t._id === id ? data.todo : t)));
       }
-    } catch (err) {
-      setError("Failed to update todo");
+    } catch (error) {
+      console.error("Error updating todo:", error);
     }
   };
 
-  const deleteTodo = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5001/api/todos/${id}`);
-      await fetchTodos();
-    } catch (err) {
-      setError("Failed to delete todo");
-    }
-  };
-
+  // Edit todo
   const editTodo = (todo) => {
     setEditingTodo(todo);
     setIsEditModalOpen(true);
   };
 
+  // Save edited todo
   const saveEditedTodo = async (id, title, description) => {
     try {
-      await axios.put(`http://localhost:5001/api/todos/${id}`, {
-        title,
-        description,
+      const response = await fetch(`http://localhost:5001/api/todos/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, description }),
       });
-      await fetchTodos();
-      setIsEditModalOpen(false);
-      setEditingTodo(null);
-    } catch (err) {
-      setError("Failed to update todo");
+      const data = await response.json();
+      if (response.ok) {
+        setTodos((prev) => prev.map((t) => (t._id === id ? data.todo : t)));
+        setIsEditModalOpen(false);
+        setEditingTodo(null);
+      }
+    } catch (error) {
+      console.error("Error saving todo:", error);
     }
   };
 
+  // Delete todo
+  const deleteTodo = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/todos/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setTodos((prev) => prev.filter((t) => t._id !== id));
+      }
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+    }
+  };
+
+  // Cancel edit
   const cancelEdit = () => {
     setIsEditModalOpen(false);
     setEditingTodo(null);
   };
 
-  const fetchTodos = async () => {
-    try {
-      const response = await fetch("http://localhost:5001/api/todos");
-      const data = await response.json();
-      setTodos(data.todos);
-      setError(null);
-      setLoading(false);
-    } catch (err) {
-      setError("Failed to fetch todos");
-      setLoading(false);
-    }
-  };
+  // Load todos on component mount
+  useEffect(() => {
+    fetchTodos();
+  }, []);
 
-  if (loading)
-    return (
-      <div className="glass-container">
-        <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-text">Loading your tasks...</div>
-        </div>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="glass-container">
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-text" style={{ color: "#f56565" }}>
-            {error}
-          </div>
-        </div>
-      </div>
-    );
+  const completedCount = todos.filter((todo) => todo.isCompleted).length;
+  const pendingCount = todos.length - completedCount;
 
   return (
-    <div className="App">
-      {showConfetti && (
-        <Confetti
-          width={window.innerWidth}
-          height={window.innerHeight}
-          recycle={false}
-          numberOfPieces={200}
-          gravity={0.3}
-        />
-      )}
+    <div className="todo-app-wrapper">
+      {/* Add Todo Form */}
       <Todo addTodo={addTodo} />
 
-      <div className="glass-container">
-        <div className="todo-list-container">
-          {todos.length > 0 ? (
-            <div className="todo-list">
-              {todos.map((todo) => (
-                <ListTodo
-                  key={todo._id}
-                  todo={todo}
-                  updateTodo={updateTodo}
-                  deleteTodo={deleteTodo}
-                  editTodo={editTodo}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">🌟</div>
-              <div className="empty-state-text">
-                No tasks yet! Add your first task above to get started.
-              </div>
-            </div>
-          )}
+      {/* Todo List */}
+      <div className="todos-container">
+        <div className="todos-header">
+          <h2>Your Tasks</h2>
+          <div className="todos-stats">
+            <span className="todos-count pending">{pendingCount} Pending</span>
+            <span className="todos-count completed">{completedCount} Done</span>
+          </div>
         </div>
+
+        {todos.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📝</div>
+            <div className="empty-state-text">No tasks yet!</div>
+            <div className="empty-state-subtext">
+              Add your first task above to get started
+            </div>
+          </div>
+        ) : (
+          <div className="todos-list">
+            {todos.map((todo) => (
+              <ListTodo
+                key={todo._id}
+                todo={todo}
+                updateTodo={updateTodo}
+                deleteTodo={deleteTodo}
+                editTodo={editTodo}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Edit Modal */}
       <EditTodo
         todo={editingTodo}
-        isOpen={isEditModalOpen}
         onSave={saveEditedTodo}
         onCancel={cancelEdit}
+        isOpen={isEditModalOpen}
       />
     </div>
   );
