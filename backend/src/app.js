@@ -9,6 +9,7 @@ import express from "express"; // ESM (ES6 Modules)
 import getTodo from "./controllers/getTodo.js";
 import addTodo from "./controllers/addTodo.js";
 import deleteTodo from "./controllers/deleteTodo.js";
+import updateTodo from "./controllers/updateTodo.js";
 import cors from "cors";
 const app = express();
 const port = 5001;
@@ -22,6 +23,7 @@ app.use(cors());
 
 app.get("/api/todos", getTodo);
 app.post("/api/todos", addTodo);
+app.put("/api/todos/:id", updateTodo);
 app.delete("/api/todos/:id", deleteTodo);
 
 // app.post("/api/todos", (req, res) => {

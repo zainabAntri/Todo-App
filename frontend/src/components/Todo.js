@@ -6,30 +6,43 @@ const Todo = ({ addTodo }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(title, description);
+    if (!title.trim()) return;
     addTodo(title, description);
     setTitle("");
     setDescription("");
   };
 
   return (
-    <div>
-      <form>
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+    <div className="glass-container">
+      <div className="todo-header">
+        <h1 className="todo-title">✨ Todo Paradise</h1>
+        <p className="todo-subtitle">Organize your life in style</p>
+      </div>
 
-        <button type="submit" onClick={handleSubmit}>
-          Add
+      <form className="todo-form" onSubmit={handleSubmit}>
+        <div className="input-group">
+          <input
+            type="text"
+            className="todo-input"
+            placeholder="What needs to be done today?"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="input-group">
+          <input
+            type="text"
+            className="todo-input"
+            placeholder="Add some details... (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+
+        <button type="submit" className="todo-button">
+          Add Task
         </button>
       </form>
     </div>
